@@ -7,11 +7,15 @@ function Cache () {
   var _size = 0;
   var _debug = false;
 
-  this.put = function(key, value, time, timeoutCallback) {
-    if (_debug) {
-      console.log('caching: %s = %j (@%s)', key, value, time);
-    }
+  var _cacheStats = {
+    expired: {},
+    set: {},
+    del: {},
+    getHit: {},
+    getMiss: {}
+  };
 
+  this.put = function(key, value, time, timeoutCallback) {
     if (typeof time !== 'undefined' && (typeof time !== 'number' || isNaN(time) || time <= 0)) {
       throw new Error('Cache timeout must be a positive number');
     } else if (typeof timeoutCallback !== 'undefined' && typeof timeoutCallback !== 'function') {
@@ -33,11 +37,22 @@ function Cache () {
     if (!isNaN(record.expire)) {
       record.timeout = setTimeout(function() {
         _del(key);
+
+        if(!_cacheStats.expired[key]) {
+          _cacheStats.expired[key] = 0;
+        }
+        _cacheStats.expired[key] ++;
+
         if (timeoutCallback) {
           timeoutCallback(key, value);
         }
       }.bind(this), time);
     }
+
+    if(!_cacheStats.set[key]) {
+      _cacheStats.set[key] = 0;
+    }
+    _cacheStats.set[key] ++;
 
     _cache[key] = record;
 
@@ -58,6 +73,10 @@ function Cache () {
     }
 
     if (canDelete) {
+      if(!_cacheStats.del[key]) {
+        _cacheStats.del[key] = 0;
+      }
+      _cacheStats.del[key] ++;
       _del(key);
     }
 
@@ -86,6 +105,10 @@ function Cache () {
     if (typeof data != "undefined") {
       if (isNaN(data.expire) || data.expire >= Date.now()) {
         if (_debug) _hitCount++;
+        if(!_cacheStats.getHit[key]) {
+          _cacheStats.getHit[key] = 0;
+        }
+        _cacheStats.getHit[key] ++;
         return data.value;
       } else {
         // free some space
@@ -94,6 +117,10 @@ function Cache () {
         delete _cache[key];
       }
     } else if (_debug) {
+      if(!_cacheStats.getMisses[key]) {
+        _cacheStats.getMisses[key] = 0;
+      }
+      _cacheStats.getMisses[key] ++;
       _missCount++;
     }
     return null;
@@ -119,6 +146,10 @@ function Cache () {
   this.hits = function() {
     return _hitCount;
   };
+
+  this.stats = function () {
+    return _cacheStats
+  }
 
   this.misses = function() {
     return _missCount;
