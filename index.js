@@ -12,7 +12,7 @@ function Cache () {
     set: {},
     del: {},
     getHit: {},
-    getMiss: {}
+    getMisses: {}
   };
 
   this.put = function(key, value, time, timeoutCallback) {
@@ -129,6 +129,18 @@ function Cache () {
   this.size = function() {
     return _size;
   };
+
+  this.resetStats = function() {
+    _cacheStats = _cacheStats = {
+      expired: {},
+      set: {},
+      del: {},
+      getHit: {},
+      getMisses: {}
+    };
+    _hitCount = 0;
+    _missCount = 0;
+  }
 
   this.memsize = function() {
     var size = 0,
